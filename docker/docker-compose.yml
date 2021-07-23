@@ -1,0 +1,52 @@
+version: "3.8"
+services:
+  influxdb:
+    image: influxdb:2.0
+    container_name: influxdb
+    restart: always
+    hostname: influxdb
+    ports:
+      - 8086:8086
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: $INFLUXDB_USER  # nom de l'utilisateur pour gérer cette base de données
+      DOCKER_INFLUXDB_INIT_PASSWORD: $INFLUXDB_USER_PASSWORD  # mot de passe de l'utilisateur pour gérer cette base de données
+      DOCKER_INFLUXDB_INIT_ORG: $INFLUXDB_ORG
+      DOCKER_INFLUXDB_INIT_BUCKET: $INFLUXDB_BUCKET
+    volumes:
+      - ./influxdb:/etc/influxdb2  # volume pour stocker la base de données InfluxDB
+    command: influxd run --bolt-path /etc/influxdb2/influxd.bolt --engine-path /etc/influxdb2/engine --store bolt
+    
+
+  telegraf:
+    image: telegraf
+    depends_on:
+      - influxdb  # indique que le service influxdb est nécessaire
+    container_name: telegraf
+    restart: always
+    links:
+      - influxdb:influxdb
+    tty: true
+    volumes:
+      - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf  # fichier de configuration de Telegraf
+
+  grafana:
+    image: grafana/grafana
+    depends_on:
+      - influxdb  # indique que le service influxdb est nécessaire
+    container_name: grafana
+    restart: always
+    ports:
+      - 3000:3000  # port pour accéder à l'interface web de Grafana
+    links:
+      - influxdb:influxdb
+    environment:
+      GF_INSTALL_PLUGINS: "grafana-clock-panel,\
+                          grafana-influxdb-08-datasource,\
+                          grafana-kairosdb-datasource,\
+                          grafana-piechart-panel,\
+                          grafana-simple-json-datasource,\
+                          grafana-worldmap-panel"
+     
+    volumes:
+      - ./grafana:/var/lib/grafana

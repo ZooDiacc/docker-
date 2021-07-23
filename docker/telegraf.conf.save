@@ -1,0 +1,69 @@
+0[global_tags]
+# Configuration for telegraf agent
+[agent] interval = "5s"
+round_interval = true
+metric_batch_size = 1000
+metric_buffer_limit = 10000
+collection_jitter = "0s"
+flush_interval = "10s"
+flush_jitter = "0s"
+precision = ""
+hostname = "mqtthetic"
+omit_hostname = true
+debug = true
+quiet = false
+
+
+[[outputs.influxdb_v2]] 
+  urls = ["http://localhost:8086"] 
+  token = "3RecwZChBrVpitBpaNIvYSuo9V7Z5SEKu-vQcVwFM08Eg2ucz15luMaMjCDlStmRCzrSsHEwPYR1gNqZez91vQ=="
+  organization = "groupe7"
+  bucket = "mqtthetic"
+
+
+[[processors.rename]] 
+  order = 1
+  [[processors.rename.replace]] 
+    tag = "source_address"
+    dest = "Node_I
+  [[processors.rename.replace]]
+    field = "tx_time_ms_epoch"
+    dest = "timestamp"
+
+[[processors.enum]]  
+  order = 2
+  [[processors.enum.mapping]] 
+    tag = "sensor_id"
+    [processors.enum.mapping.value_mappings] ##Anchor2s
+      110 = "Detection de fuite"
+      126 = "Poids"
+      102 = "Capteur Etat"
+      108 = "Debitmetre"
+      133 = "WattMetre"
+
+[[processors.enum]]
+  order = 3
+  [[processors.enum.mapping]]
+    tag = "Node_ID"
+    [processors.enum.mapping.value_mappings] ##Anchor2s
+      12345678 = "Washing 1"
+      7654321 = "Washing 2"
+      1274555678 = "Washing 3"
+      7654931 = "Washing 4"
+      845217199 = Washing 5"
+      741852963 = "Washing 6"
+
+[[processors.converter]] 
+  order = 4
+  [processors.converter.tags] 
+  measurement = ["sensor_id"]
+
+[[inputs.mqtt_consumer]]
+  servers = ["tcp://hetic.arcplex.fr:1883"] 
+  topics = ["GROUPE7/#"]
+  tagexclude = ["topic"]
+  tag_keys = ["source_address","sensor_id"]
+  username = "GROUPE7"
+  password = "64459019"
+  data_format = "json"
+  
